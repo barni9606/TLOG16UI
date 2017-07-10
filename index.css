@@ -1,0 +1,20 @@
+.bg-inverse {
+    background-color: #292b2c !important;
+}
+.text-white {
+    color: #fff !important;
+}
+.col-centered{
+    float: none;
+    margin: 0 auto;
+}
+
+a {
+    color: inherit;
+}
+a:link, a:visited {
+    color: inherit;
+}
+a:hover {
+    color: red;
+}
