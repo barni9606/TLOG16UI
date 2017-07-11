@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="index.css">
     <script src="../node_modules/jquery/dist/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" type="text/javascript"></script>
-    <script src="../js/index.js" type="text/javascript"></script>
+    <script src="index.js" type="text/javascript"></script>
     <script type="text/javascript">
         var selectedDay = new Date();
         var year = selectedDay.getFullYear(),
@@ -66,8 +66,7 @@
         function selectDay(i) {
             day = i;
             $(".selected").removeClass("selected");
-            $("#selectedDay").text(i);
-            $("#selectedDay").addClass("selected");
+            $("#selectedDay").text(i).addClass("selected");
             $("#day" + i).addClass("selected");
             selectDate(true);
         }
@@ -76,13 +75,19 @@
 
         }
 
+
         function changeMonth(i) {
             if(month + i < 0){
-                year  -= Math.ceil( (month + i) / 12) + 1;
-                month  = 11 - (-1 * (month + i)) % 11;
-            } else if(month + i > 11){
-                year  += Math.floor( (month + i) / 11);
-                month  = 11 -  (month + i) % 12;
+                year += -1;
+                if(i === -1){
+                    month  = 11;
+                }
+            } else if(month + i > 11 ){
+                year += 1;
+                if(i === 1){
+                    month  = 0;
+                }
+
             } else {
                 month += i;
             }
@@ -116,10 +121,10 @@
         <a href="#" class="" onclick="changeMonth(1)">
         <span class="glyphicon glyphicon-chevron-right" id="month-right" ></span></a>
 
-        <a href="#" class="" onclick="changeMonth(-11)">
+        <a href="#" class="" onclick="changeMonth(-12)">
         <span class="glyphicon glyphicon-chevron-left" id="year-left" ></span></a>
         <span id="year"></span>
-        <a href="#" class="" onclick="changeMonth(11)">
+        <a href="#" class="" onclick="changeMonth(12)">
         <span class="glyphicon glyphicon-chevron-right" id="year-right" ></span></a>
 
     </div>
