@@ -18,6 +18,12 @@ a:link, a:visited {
 a:hover {
     color: red;
 }
-.tab {
-    padding-left:5em
+
+.day:hover{
+    color: red;
+    cursor: pointer;
+}
+
+.selected{
+    color: red;
 }
