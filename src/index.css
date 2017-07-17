@@ -20,10 +20,22 @@ a:hover {
 }
 
 .day:hover{
-    color: red;
+    color: blue;
     cursor: pointer;
 }
 
 .selected{
+    color: blue;
+}
+
+.negativeExtraMin{
     color: red;
+}
+
+.positiveExtraMin{
+    color: green;
+}
+
+.activated{
+
 }

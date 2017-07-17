@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="index.css">
     <script src="../node_modules/jquery/dist/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" type="text/javascript"></script>
-    <script src="index.js" type="text/javascript"></script>
     <script type="text/javascript">
         var selectedDay = new Date();
         var year = selectedDay.getFullYear(),
@@ -17,6 +16,9 @@
         var daysInMonth;
         var firstDayOfWeek;
         var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        var activatedDays = [];
+        var extraMinPerMonth;
+        var requiredMinPerMonth;
         function selectDate(b) {
             if(b){
                 $("#selectedDayForm").removeClass("hidden");
@@ -49,8 +51,23 @@
                     i++;
                 }
                 while(leftOfTheWeek > 0 && i <= daysInMonth){
-                    week.append('<div class="col-md-1 day" id="day'
-                        + i + '" onclick="selectDay(' + i + ')"> '+ i + ' </div>');
+                    var extraMinPerDayString;
+                    var extraMinPerDayClass;
+                    if(activatedDays[i]){
+                        extraMinPerDayString = " (" + activatedDays[i] + ")";
+                        if(activatedDays[i] < 0){
+                            extraMinPerDayClass = " activated negativeExtraMin";
+
+                        } else {
+                            extraMinPerDayClass = " activated positiveExtraMin";
+                        }
+                    } else {
+                        extraMinPerDayString = "";
+                        extraMinPerDayClass = "";
+
+                    }
+                    week.append('<div class="col-md-1 day' + extraMinPerDayClass + '" id="day'
+                        + i + '" onclick="selectDay(' + i + ')"> '+ i + extraMinPerDayString + ' </div>');
                     i++;
                     leftOfTheWeek--;
                 }
@@ -61,20 +78,79 @@
                 $("#week" + j + " div:first-child").addClass("col-md-offset-3");
             }
 
+            $("#extraMinPerMonth").text(extraMinPerMonth);
+            $("#requiredMinPerMonth").text(requiredMinPerMonth);
+
+        }
+
+        function requestMonth() {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open("GET", "http://127.0.0.1:9080/timelogger/workmonths/" + year + "/" + (month + 1), true);
+            xmlhttp.send();
+            activatedDays = [];
+            for(var i = 0; i < new Date(year, month + 1, 0).getDate(); i++){
+                activatedDays[i] = undefined;
+            }
+            xmlhttp.onreadystatechange = function() {
+                if (this.readyState === 4 && this.status === 200) {
+                    var parsed = JSON.parse(xmlhttp.responseText);
+                    extraMinPerMonth = 0;
+                    requiredMinPerMonth = 0;
+                    parsed.forEach(function (item, index) {
+                        var itemDay = item.actualDay.dayOfMonth;
+                        activatedDays[itemDay] = item.extraMinPerDay;
+                        extraMinPerMonth    += item.extraMinPerDay;
+                        requiredMinPerMonth += item.requiredMinPerDay;
+                    });
+                    drawCalendar();
+                }
+            }
         }
 
         function selectDay(i) {
-            day = i;
-            $(".selected").removeClass("selected");
-            $("#selectedDay").text(i).addClass("selected");
-            $("#day" + i).addClass("selected");
-            selectDate(true);
+            if(!$("#day" + i).hasClass("activated")){
+                day = i;
+                $(".selected").removeClass("selected");
+                $("#selectedDay").text(i).addClass("selected");
+                $("#day" + i).addClass("selected");
+                selectDate(true);
+            }
+        }
+
+        function activateDayRequest(item) {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open("POST", "http://127.0.0.1:9080/timelogger/workmonths/workdays" + item, true);
+            xmlhttp.setRequestHeader("Content-Type", "application/json");
+            var reqiredHours = parseFloat($("#requiredHours").val());
+            var data = {"year": year, "month": month + 1, "day": day, "requiredHours": reqiredHours};
+            xmlhttp.send(JSON.stringify(data));
+            selectDate(false);
+            return xmlhttp;
         }
 
         function activateDay() {
-
+            var xmlhttp = activateDayRequest("");
+            xmlhttp.onreadystatechange = function() {
+                if(this.readyState === 4) {
+                    if (this.status === 200) {
+                        requestMonth();
+                    } else if (this.status === 403) {
+                        $("#weekendModal").modal("show");
+                    }
+                }
+            }
         }
 
+        function handleWeekend(){
+            var xmlhttp = activateDayRequest("/weekend");
+            xmlhttp.onreadystatechange = function() {
+                if(this.readyState === 4) {
+                    if (this.status === 200) {
+                        requestMonth();
+                    }
+                }
+            }
+        }
 
         function changeMonth(i) {
             if(month + i < 0){
@@ -93,10 +169,11 @@
             }
             selectDate(false);
 
-            drawCalendar();
+            requestMonth();
         }
+
         window.onload = function () {
-            drawCalendar();
+            requestMonth();
         }
     </script>
     <title>Timelogger</title>
@@ -144,8 +221,8 @@
     <hr /> <hr />
     <div class="jumbotron">
         <h3>Statistics</h3><br />
-        Extra minutes per month:<span> </span><br />
-        Required minutes per month:<span> </span><br />
+        Extra minutes per month:<span id="extraMinPerMonth"> </span><br />
+        Required minutes per month:<span id="requiredMinPerMonth"> </span><br />
     </div>
     <hr />
     <div class="form-group hidden" id="selectedDayForm">
@@ -153,9 +230,30 @@
         <span id="selectedDay"></span>
         <br />
         <label>Required hours:</label>
-        <input type="text" class="form-control">
+        <input type="text" class="form-control" id="requiredHours">
         <br />
         <button  type="button" onclick="activateDay()" class="btn btn-primary">Activate day</button>
+    </div>
+
+    <div class="modal fade" id="weekendModal" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+
+                </div>
+                <div class="modal-body">
+                    <p>Do you want to activate the weekend</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" onclick="handleWeekend()" data-dismiss="modal">Yes</button>
+                    <button type="button" class="btn btn-danger"  data-dismiss="modal">No</button>
+                </div>
+            </div>
+
+        </div>
     </div>
 
 </div>
